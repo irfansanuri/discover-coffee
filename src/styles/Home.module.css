@@ -50,6 +50,12 @@
   2xl: min-width: 1536px;
 **/
 
+@media (max-width: 640px) {
+  .main {
+    max-width: 100vw;
+  }
+}
+
 @media (min-width: 640px) {
   .container {
     padding-left: 1rem /* 16px */;
