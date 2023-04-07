@@ -1,8 +1,16 @@
 export type coffeeStoreType = {
-    id: number;
-    name: string;
-    imgUrl: string;
-    websiteUrl: string;
+  imgUrl: string;
+  fsq_id: number;
+  link: string;
+  location: {
     address: string;
-    neighbourhood: string;
+    country: string;
+    cross_street: string;
+    formatted_address: string;
+    locality: string;
+    region: string;
+  };
+  name: string;
+  related_places: {};
+  timezone: string;
 };

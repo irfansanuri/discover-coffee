@@ -1,39 +1,45 @@
 import React from "react";
 import { useRouter } from "next/router";
-import Link from "next/link";
 import { GetStaticPaths } from "next";
-import coffeeStoresData from "../../../data/coffee-stores.json";
 import { coffeeStoreType } from "../../../types";
 import { GetStaticProps } from "next";
 import Head from "next/head";
 import styles from "../../styles/coffee-store.module.css";
 import Image from "next/image";
 import cls from "classnames";
+import Link from "next/link";
+import { fetchCoffeeStores } from "../../../lib/coffee_store";
 
 export const getStaticProps: GetStaticProps = async (context) => {
+  const coffeeStores = await fetchCoffeeStores();
   const params = context.params;
+
+  const findCoffeeStoreById = coffeeStores.find(
+    (coffeeStore: coffeeStoreType) => {
+      return coffeeStore.fsq_id.toString() === params?.id;
+    }
+  );
 
   return {
     props: {
-      coffeeStore: coffeeStoresData.find((coffeeStore) => {
-        return coffeeStore.id.toString() === params?.id;
-      }),
+      coffeeStore: findCoffeeStoreById,
     },
   };
 };
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const paths = coffeeStoresData.map((coffeeStore) => {
+  const coffeeStores = await fetchCoffeeStores();
+  const paths = coffeeStores?.map((coffeeStore: coffeeStoreType) => {
     return {
       params: {
-        id: coffeeStore.id.toString(),
+        id: coffeeStore.fsq_id.toString(),
       },
     };
   });
 
   return {
     paths,
-    fallback: true,
+    fallback: false,
   };
 };
 
@@ -44,12 +50,7 @@ const CoffeeStore = (props: { coffeeStore: coffeeStoreType }) => {
     return <div>Loading...</div>;
   }
 
-  const {
-    name = "",
-    address = "",
-    neighbourhood = "",
-    imgUrl = "",
-  } = props.coffeeStore;
+  const { name, location, imgUrl = "" } = props.coffeeStore;
 
   return (
     <div className={styles.layout}>
@@ -78,7 +79,7 @@ const CoffeeStore = (props: { coffeeStore: coffeeStoreType }) => {
         </div>
 
         <div className={cls("glass", styles.col2)}>
-          {address && (
+          {location.address && (
             <div className={styles.iconWrapper}>
               <Image
                 src="/static/icons/places.svg"
@@ -86,10 +87,10 @@ const CoffeeStore = (props: { coffeeStore: coffeeStoreType }) => {
                 height="24"
                 alt="places icon"
               />
-              <p className={styles.text}>{address}</p>
+              <p className={styles.text}>{location.address}</p>
             </div>
           )}
-          {neighbourhood && (
+          {location.locality && (
             <div className={styles.iconWrapper}>
               <Image
                 src="/static/icons/nearMe.svg"
@@ -97,7 +98,7 @@ const CoffeeStore = (props: { coffeeStore: coffeeStoreType }) => {
                 height="24"
                 alt="near me icon"
               />
-              <p className={styles.text}>{neighbourhood}</p>
+              <p className={styles.text}>{location.locality}</p>
             </div>
           )}
           <div className={styles.iconWrapper}>
