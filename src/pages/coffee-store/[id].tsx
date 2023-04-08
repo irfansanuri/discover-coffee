@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { GetStaticPaths } from "next";
 import { coffeeStoreType } from "../../../types";
@@ -9,6 +9,8 @@ import Image from "next/image";
 import cls from "classnames";
 import Link from "next/link";
 import { fetchCoffeeStores } from "../../../lib/coffee_store";
+import { StoreContext } from "../../../store/store-context";
+import { isEmpty } from "../../../utils";
 
 export const getStaticProps: GetStaticProps = async (context) => {
   const coffeeStores = await fetchCoffeeStores();
@@ -22,7 +24,7 @@ export const getStaticProps: GetStaticProps = async (context) => {
 
   return {
     props: {
-      coffeeStore: findCoffeeStoreById,
+      coffeeStore: findCoffeeStoreById || {},
     },
   };
 };
@@ -39,18 +41,52 @@ export const getStaticPaths: GetStaticPaths = async () => {
 
   return {
     paths,
-    fallback: false,
+    fallback: true,
   };
 };
 
-const CoffeeStore = (props: { coffeeStore: coffeeStoreType }) => {
+const CoffeeStore = (initialProps: { coffeeStore: coffeeStoreType }) => {
   const router = useRouter();
+
+  const id = router.query.id;
+  const [coffeeStore, setCoffeeStore] = useState(
+    initialProps.coffeeStore || {}
+  );
+  const {
+    state: { coffeeStores },
+    state,
+  } = useContext(StoreContext);
+
+  useEffect(() => {
+    if (isEmpty(coffeeStore)) {
+      if (coffeeStores.length > 0) {
+        const findCoffeeStoreById = coffeeStores.find(
+          (coffeeStore: coffeeStoreType) => {
+            return coffeeStore.fsq_id.toString() === id;
+          }
+        );
+        setCoffeeStore(findCoffeeStoreById);
+      }
+    }
+    return () => {};
+  }, [id, coffeeStore, coffeeStores]);
 
   if (router.isFallback) {
     return <div>Loading...</div>;
   }
 
-  const { name, location, imgUrl = "" } = props.coffeeStore;
+  const {
+    name = "",
+    imgUrl,
+    location = {
+      address: "",
+      country: "",
+      cross_street: "",
+      formatted_address: "",
+      locality: "",
+      region: "",
+    },
+  } = coffeeStore;
 
   return (
     <div className={styles.layout}>
@@ -87,7 +123,7 @@ const CoffeeStore = (props: { coffeeStore: coffeeStoreType }) => {
                 height="24"
                 alt="places icon"
               />
-              <p className={styles.text}>{location.address}</p>
+              <p className={styles.text}>{location.address || ""}</p>
             </div>
           )}
           {location.locality && (
@@ -98,7 +134,7 @@ const CoffeeStore = (props: { coffeeStore: coffeeStoreType }) => {
                 height="24"
                 alt="near me icon"
               />
-              <p className={styles.text}>{location.locality}</p>
+              <p className={styles.text}>{location.locality || ""}</p>
             </div>
           )}
           <div className={styles.iconWrapper}>

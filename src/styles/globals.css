@@ -11,6 +11,7 @@ body{
   background-repeat: no-repeat;
   background-size: cover;
   color: #373b64;
+  padding-bottom: 6rem;
 }
 
 @font-face {

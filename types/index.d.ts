@@ -14,3 +14,23 @@ export type coffeeStoreType = {
   related_places: {};
   timezone: string;
 };
+
+export type Position = {
+  coords: {
+    latitude: any;
+    longitude: any;
+  };
+};
+
+export type StoreProviderProps = {
+  children: ReactNode;
+};
+
+export type State = {
+  latLong: Position | null;
+  coffeeStores: coffeeStoreType[];
+};
+
+export type Action =
+  | { type: "SET_LAT_LONG"; payload: { latLong: Position | null } }
+  | { type: "SET_COFFEE_STORES"; payload: { coffeeStores: coffeeStoreType[] } };
