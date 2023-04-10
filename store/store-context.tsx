@@ -22,7 +22,7 @@ const storeReducer = (
       throw new Error(`Unhandled action type: ${action.type}`);
   }
 };
-export const StoreProvider = ({ children }: StoreProviderProps) => {
+const StoreProvider = ({ children }: StoreProviderProps) => {
   const initialState = {
     latLong: "",
     coffeeStores: [],
@@ -35,3 +35,5 @@ export const StoreProvider = ({ children }: StoreProviderProps) => {
     </StoreContext.Provider>
   );
 };
+
+export default StoreProvider;

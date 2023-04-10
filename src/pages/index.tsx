@@ -9,6 +9,7 @@ import { GetStaticProps } from "next";
 import { fetchCoffeeStores } from "../../lib/coffee_store";
 import useTrackLocation from "../../hooks/use-track-location";
 import { ACTION_TYPES, StoreContext } from "../../store/store-context";
+import axios from "axios";
 
 export const getStaticProps: GetStaticProps = async (context) => {
   const coffeeStores = await fetchCoffeeStores();
@@ -19,6 +20,7 @@ export const getStaticProps: GetStaticProps = async (context) => {
 
 const Home = (props: { coffeeStores: Array<coffeeStoreType> }) => {
   const [coffeeStoresError, setCoffeeStoresError] = useState("");
+
   const { handleTrackLocation, locationErrorMsg, isFindingLocation } =
     useTrackLocation();
 
@@ -29,10 +31,13 @@ const Home = (props: { coffeeStores: Array<coffeeStoreType> }) => {
     const fetchData = async () => {
       try {
         if (latLong) {
-          const fetchedCoffeeStores = await fetch(
-            `/api/getCoffeeStoresByLocation?latLong=${latLong}&limit=30`
-          );
-          const coffeeStores = await fetchedCoffeeStores.json();
+          const response = await axios.get("/api/getCoffeeStoresByLocation", {
+            params: {
+              latLong,
+              limit: 30,
+            },
+          });
+          const coffeeStores = response.data;
 
           dispatch({
             type: ACTION_TYPES.SET_COFFEE_STORES,
@@ -52,10 +57,6 @@ const Home = (props: { coffeeStores: Array<coffeeStoreType> }) => {
     return () => {};
   }, [latLong, dispatch]);
 
-  function handleOnBannerBtnClick() {
-    handleTrackLocation();
-  }
-
   return (
     <>
       <Head>
@@ -66,7 +67,7 @@ const Home = (props: { coffeeStores: Array<coffeeStoreType> }) => {
       </Head>
       <main className={styles.main}>
         <Banner
-          handleOnClick={handleOnBannerBtnClick}
+          handleOnClick={handleTrackLocation}
           buttonText={
             isFindingLocation ? locationErrorMsg : "View shops nearby"
           }

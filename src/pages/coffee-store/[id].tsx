@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { GetStaticPaths } from "next";
-import { coffeeStoreType } from "../../../types";
+import { coffeeStoreType, RecordField } from "../../../types";
 import { GetStaticProps } from "next";
 import Head from "next/head";
 import styles from "../../styles/coffee-store.module.css";
@@ -10,10 +10,18 @@ import cls from "classnames";
 import Link from "next/link";
 import { fetchCoffeeStores } from "../../../lib/coffee_store";
 import { StoreContext } from "../../../store/store-context";
-import { isEmpty } from "../../../utils";
+import {
+  fetcher,
+  isEmpty,
+  toAirTableFormat,
+  toCoffeeStoreFormat,
+} from "../../../utils";
+import axios from "axios";
+import useSWR from "swr";
 
 export const getStaticProps: GetStaticProps = async (context) => {
   const coffeeStores = await fetchCoffeeStores();
+
   const params = context.params;
 
   const findCoffeeStoreById = coffeeStores.find(
@@ -22,15 +30,18 @@ export const getStaticProps: GetStaticProps = async (context) => {
     }
   );
 
+  const coffeeStore = findCoffeeStoreById;
+
   return {
     props: {
-      coffeeStore: findCoffeeStoreById || {},
+      coffeeStore: coffeeStore || {},
     },
   };
 };
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const coffeeStores = await fetchCoffeeStores();
+
   const paths = coffeeStores?.map((coffeeStore: coffeeStoreType) => {
     return {
       params: {
@@ -52,28 +63,12 @@ const CoffeeStore = (initialProps: { coffeeStore: coffeeStoreType }) => {
   const [coffeeStore, setCoffeeStore] = useState(
     initialProps.coffeeStore || {}
   );
+  const [votingCount, setVotingCount] = useState(0);
+  const { data, error } = useSWR(`/api/getCoffeeStoreById?id=${id}`, fetcher);
+
   const {
     state: { coffeeStores },
-    state,
   } = useContext(StoreContext);
-
-  useEffect(() => {
-    if (isEmpty(coffeeStore)) {
-      if (coffeeStores.length > 0) {
-        const findCoffeeStoreById = coffeeStores.find(
-          (coffeeStore: coffeeStoreType) => {
-            return coffeeStore.fsq_id.toString() === id;
-          }
-        );
-        setCoffeeStore(findCoffeeStoreById);
-      }
-    }
-    return () => {};
-  }, [id, coffeeStore, coffeeStores]);
-
-  if (router.isFallback) {
-    return <div>Loading...</div>;
-  }
 
   const {
     name = "",
@@ -87,6 +82,82 @@ const CoffeeStore = (initialProps: { coffeeStore: coffeeStoreType }) => {
       region: "",
     },
   } = coffeeStore;
+
+  const handleCreateCoffeeStore = async (coffeeStore: RecordField) => {
+    try {
+      const { id, name, voting = 0, imgUrl, location, address } = coffeeStore;
+
+      const response = await axios.post("/api/createCoffeeStore", {
+        id,
+        name,
+        voting,
+        imgUrl,
+        location: location || "",
+        address: address || "",
+      });
+    } catch (err) {
+      console.error("Error creating coffee store", err);
+    }
+  };
+
+  const handleUpvoteButton = async () => {
+    try {
+      const response = await fetch("/api/favouriteCoffeeStoreById", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id,
+        }),
+      });
+
+      const dbCoffeeStore = await response.json();
+
+      if (dbCoffeeStore && dbCoffeeStore.length > 0) {
+        let count = votingCount + 1;
+        setVotingCount(count);
+      }
+    } catch (err) {
+      console.error("Error upvoting the coffee store", err);
+    }
+  };
+
+  useEffect(() => {
+    if (isEmpty(coffeeStore)) {
+      if (coffeeStores.length > 0) {
+        const findCoffeeStoreById = coffeeStores.find(
+          (coffeeStore: coffeeStoreType) => {
+            return coffeeStore.fsq_id.toString() === id; //dynamic id
+          }
+        );
+        setCoffeeStore(findCoffeeStoreById);
+
+        const coffeeStoreAirTable = toAirTableFormat(findCoffeeStoreById);
+        handleCreateCoffeeStore(coffeeStoreAirTable);
+      }
+    } else {
+      // SSG
+      const coffeeStoreAirTable = toAirTableFormat(coffeeStore);
+      handleCreateCoffeeStore(coffeeStoreAirTable);
+    }
+  }, [id, coffeeStore, coffeeStores]);
+
+  useEffect(() => {
+    if (data && data.length > 0) {
+      const coffeeStore = toCoffeeStoreFormat(data[0]);
+      setCoffeeStore(coffeeStore);
+      setVotingCount(coffeeStore.voting);
+    }
+  }, [data]);
+
+  if (router.isFallback) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Something went wrong retrieving coffee store page</div>;
+  }
 
   return (
     <div className={styles.layout}>
@@ -144,10 +215,10 @@ const CoffeeStore = (initialProps: { coffeeStore: coffeeStoreType }) => {
               height="24"
               alt="star icon"
             />
-            <p className={styles.text}>1</p>
+            <p className={styles.text}>{votingCount}</p>
           </div>
 
-          <button className={styles.upvoteButton} onClick={() => {}}>
+          <button className={styles.upvoteButton} onClick={handleUpvoteButton}>
             Up vote!
           </button>
         </div>

@@ -1,6 +1,6 @@
 export type coffeeStoreType = {
   imgUrl: string;
-  fsq_id: number;
+  fsq_id: string;
   link: string;
   location: {
     address: string;
@@ -10,6 +10,7 @@ export type coffeeStoreType = {
     locality: string;
     region: string;
   };
+  voting: number;
   name: string;
   related_places: {};
   timezone: string;
@@ -26,11 +27,16 @@ export type StoreProviderProps = {
   children: ReactNode;
 };
 
-export type State = {
-  latLong: Position | null;
-  coffeeStores: coffeeStoreType[];
+export type RecordType = {
+  id: string;
+  fields: RecordField;
 };
 
-export type Action =
-  | { type: "SET_LAT_LONG"; payload: { latLong: Position | null } }
-  | { type: "SET_COFFEE_STORES"; payload: { coffeeStores: coffeeStoreType[] } };
+export type RecordField = {
+  id: string;
+  name: string;
+  address: string;
+  location: string;
+  voting: number;
+  imgUrl: string;
+};
