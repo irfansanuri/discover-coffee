@@ -83,23 +83,6 @@ const CoffeeStore = (initialProps: { coffeeStore: coffeeStoreType }) => {
     },
   } = coffeeStore;
 
-  const handleCreateCoffeeStore = async (coffeeStore: RecordField) => {
-    try {
-      const { id, name, voting = 0, imgUrl, location, address } = coffeeStore;
-
-      const response = await axios.post("/api/createCoffeeStore", {
-        id,
-        name,
-        voting,
-        imgUrl,
-        location: location || "",
-        address: address || "",
-      });
-    } catch (err) {
-      console.error("Error creating coffee store", err);
-    }
-  };
-
   const handleUpvoteButton = async () => {
     try {
       const response = await fetch("/api/favouriteCoffeeStoreById", {
@@ -123,29 +106,50 @@ const CoffeeStore = (initialProps: { coffeeStore: coffeeStoreType }) => {
     }
   };
 
+  const createCoffeeStoreRecord = async (coffeeStore: coffeeStoreType) => {
+    const coffeeStoreAirTable = toAirTableFormat(coffeeStore);
+
+    try {
+      const {
+        id,
+        name,
+        voting = 0,
+        imgUrl,
+        location,
+        address,
+      } = coffeeStoreAirTable;
+
+      await axios.post("/api/createCoffeeStore", {
+        id,
+        name,
+        voting,
+        imgUrl,
+        location: location || "",
+        address: address || "",
+      });
+    } catch (err) {
+      console.error("Error creating coffee store", err);
+    }
+  };
+
   useEffect(() => {
     if (isEmpty(coffeeStore)) {
       if (coffeeStores.length > 0) {
         const findCoffeeStoreById = coffeeStores.find(
-          (coffeeStore: coffeeStoreType) => {
-            return coffeeStore.fsq_id.toString() === id; //dynamic id
-          }
+          (coffeeStore: coffeeStoreType) => coffeeStore.fsq_id.toString() === id
         );
         setCoffeeStore(findCoffeeStoreById);
-
-        const coffeeStoreAirTable = toAirTableFormat(findCoffeeStoreById);
-        handleCreateCoffeeStore(coffeeStoreAirTable);
+        createCoffeeStoreRecord(findCoffeeStoreById);
       }
     } else {
-      // SSG
-      const coffeeStoreAirTable = toAirTableFormat(coffeeStore);
-      handleCreateCoffeeStore(coffeeStoreAirTable);
+      createCoffeeStoreRecord(coffeeStore);
     }
   }, [id, coffeeStore, coffeeStores]);
 
   useEffect(() => {
-    if (data && data.length > 0) {
-      const coffeeStore = toCoffeeStoreFormat(data[0]);
+    const coffeeStoreData = data?.[0];
+    if (coffeeStoreData) {
+      const coffeeStore = toCoffeeStoreFormat(coffeeStoreData);
       setCoffeeStore(coffeeStore);
       setVotingCount(coffeeStore.voting);
     }
